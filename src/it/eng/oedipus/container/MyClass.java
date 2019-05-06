@@ -55,7 +55,7 @@ public class MyClass extends TimerTask {
 	public void run() {
 
 		//your code
-		logger.debug(".........running........");
+		logger.debug(".........running........"+index);
 		try {
 			FileInputStream input = new FileInputStream("config.properties");
 			// load a properties file
@@ -313,7 +313,7 @@ public class MyClass extends TimerTask {
 					long diff=container.getTime().getTime()-prec.getTime().getTime();
 					long lastTripTime=d.getTime()-tripEffectiveTime.get(container.getTripId());
 
-
+					
 					attribute=new Attribute();
 					attribute.setValue(diff/1000);
 					attribute.setValue(lastTripTime/1000);
@@ -344,6 +344,7 @@ public class MyClass extends TimerTask {
 					entity.setAttributes(new HashMap<>());
 				entity.getAttributes().put("minTripTime", attribute);
 
+				
 
 
 
@@ -351,7 +352,15 @@ public class MyClass extends TimerTask {
 			}
 
 
-
+			if (container.getSectorId().equals("1")) {
+				System.out.println("BRUTE FORCE");
+				attribute=new Attribute();
+				attribute.setValue(0);
+				attribute.setType("String");
+				if (entity.getAttributes()==null)
+					entity.setAttributes(new HashMap<>());
+				entity.getAttributes().put("tripTime", attribute);
+			}
 
 
 			ObjectMapper mapper = new ObjectMapper();
@@ -375,9 +384,14 @@ public class MyClass extends TimerTask {
 			.header("fiware-service", prop.getProperty("fiware-service"))
 			.header("fiware-servicepath", prop.getProperty("fiware-servicepath"))
 			.post(javax.ws.rs.client.Entity.json(jsonInString));
+			
 			logger.debug("RTA="+container.getRequestTimeArrival());
 			logger.debug("ETA="+container.getExtimatedTimeArrival());
 			logger.debug("time="+entity.getAttributes().get("time").getValue());
+			logger.debug("tripTime="+Long.parseLong(entity.getAttributes().get("tripTime").getValue().toString()));
+			logger.debug("tripId="+entity.getAttributes().get("tripId").getValue());
+			logger.debug("sectorId="+entity.getAttributes().get("sectorId").getValue());
+
 
 
 
@@ -403,8 +417,11 @@ public class MyClass extends TimerTask {
 
 	public void schedule() {
 		long interval;
-		if (index==containers.size()-2)
+		boolean reset=false;
+		if (index==containers.size()-2) {
 			index=0;
+			reset=true;
+		}
 		long timeDifference=containers.get(index+1).getTime().getTime()-containers.get(index).getTime().getTime();
 
 		if (intervalRate==-1) {
@@ -415,7 +432,8 @@ public class MyClass extends TimerTask {
 		}
 		if (interval<0)
 			interval=0;
-		timer.schedule(new MyClass(containers,tripRTA, tripEffectiveTime,index+1, intervalRate),interval);
+	
+		timer.schedule(new MyClass(containers,tripRTA, tripEffectiveTime,reset?0:index+1, intervalRate),interval);
 	}
 
 	public int getIndex() {
